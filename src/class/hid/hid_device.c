@@ -62,6 +62,7 @@ typedef struct {
 
 static hidd_interface_t _hidd_itf[CFG_TUD_HID];
 CFG_TUD_MEM_SECTION static hidd_epbuf_t _hidd_epbuf[CFG_TUD_HID];
+static uint8_t hidd_epbuf_size[CFG_TUD_HID] = { 0 }; // custom
 
 /*------------- Helpers -------------*/
 TU_ATTR_ALWAYS_INLINE static inline uint8_t get_index_by_itfnum(uint8_t itf_num) {
@@ -99,6 +100,13 @@ TU_ATTR_WEAK void tud_hid_report_failed_cb(uint8_t instance, hid_report_type_t r
   (void) report_type;
   (void) report;
   (void) xferred_bytes;
+}
+
+//custom
+bool tud_hid_set_epsize(uint8_t instance, uint8_t ep_size) {
+  TU_VERIFY(instance < CFG_TUD_HID);
+  hidd_epbuf_size[instance] = ep_size;
+  return true;
 }
 
 //--------------------------------------------------------------------+
@@ -218,6 +226,10 @@ bool hidd_deinit(void) {
 void hidd_reset(uint8_t rhport) {
   (void)rhport;
   tu_memclr(_hidd_itf, sizeof(_hidd_itf));
+  //custom
+  for (uint8_t i = 0; i < CFG_TUD_HID; ++i) {
+    hidd_epbuf_size[i] = CFG_TUD_HID_EP_BUFSIZE;
+  }
 }
 
 uint16_t hidd_open(uint8_t rhport, tusb_desc_interface_t const *desc_itf, uint16_t max_len) {
@@ -263,11 +275,14 @@ uint16_t hidd_open(uint8_t rhport, tusb_desc_interface_t const *desc_itf, uint16
 
   // Prepare for output endpoint
   if (p_hid->ep_out) {
-    TU_ASSERT(usbd_edpt_xfer(rhport, p_hid->ep_out, p_epbuf->epout, CFG_TUD_HID_EP_BUFSIZE), drv_len);
+    TU_ASSERT(usbd_edpt_xfer(rhport, p_hid->ep_out, p_epbuf->epout, hidd_epbuf_size[hid_id] /*CFG_TUD_HID_EP_BUFSIZE*/), drv_len);
   }
 
   return drv_len;
 }
+
+//custom
+TU_ATTR_WEAK void hid_descriptor_report_read_cb(void) { }
 
 // Invoked when a control transfer occurred on an interface of this class
 // Driver response accordingly to the request and the transfer stage (setup/data/ack)
@@ -292,6 +307,7 @@ bool hidd_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_request_t 
       } else if (request->bRequest == TUSB_REQ_GET_DESCRIPTOR && desc_type == HID_DESC_TYPE_REPORT) {
         uint8_t const *desc_report = tud_hid_descriptor_report_cb(hid_itf);
         tud_control_xfer(rhport, request, (void *)(uintptr_t)desc_report, p_hid->report_desc_len);
+        hid_descriptor_report_read_cb();
       } else {
         return false; // stall unsupported request
       }
@@ -413,7 +429,7 @@ bool hidd_xfer_cb(uint8_t rhport, uint8_t ep_addr, xfer_result_t result, uint32_
     }
 
     // prepare for new transfer
-    TU_ASSERT(usbd_edpt_xfer(rhport, p_hid->ep_out, p_epbuf->epout, CFG_TUD_HID_EP_BUFSIZE));
+    TU_ASSERT(usbd_edpt_xfer(rhport, p_hid->ep_out, p_epbuf->epout, hidd_epbuf_size[instance] /*CFG_TUD_HID_EP_BUFSIZE*/));
   }
 
   return true;

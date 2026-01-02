@@ -628,7 +628,7 @@ static void process_set_config(tuh_xfer_t* xfer) {
     case CONFIG_GET_REPORT_DESC:
       // Get Report Descriptor if possible
       // using usbh enumeration buffer since report descriptor can be very long
-      if (p_hid->report_desc_len > CFG_TUH_ENUMERATION_BUFSIZE) {
+      if (p_hid->report_desc_len > CFG_TUH_ENUMERATION_BUFSIZE || tuh_hid_descriptor_blacklisted(daddr)) {
         TU_LOG_DRV("HID Skip Report Descriptor since it is too large %u bytes\r\n", p_hid->report_desc_len);
 
         // Driver is mounted without report descriptor
@@ -800,5 +800,8 @@ uint8_t tuh_hid_parse_report_descriptor(tuh_hid_report_info_t* report_info_arr, 
 
   return report_num;
 }
+
+// Custom: Dont read hid descriptor for some devices.
+TU_ATTR_WEAK bool tuh_hid_descriptor_blacklisted(uint8_t dev_addr) { return false; }
 
 #endif

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * The MIT License (MIT)
  *
  * Copyright (c) 2021 Ha Thach (tinyusb.org)
@@ -44,6 +44,22 @@
 #define RHPORT_PIO(_x)    ((_x)-RHPORT_OFFSET)
 
 static pio_usb_configuration_t pio_host_cfg = PIO_USB_DEFAULT_CONFIG;
+
+#ifndef pio_usb_host_endpoint_close
+static inline bool pio_usb_host_endpoint_close(uint8_t root_idx,
+                                               uint8_t dev_addr,
+                                               uint8_t ep_addr)
+{
+  (void)root_idx;
+  (void)dev_addr;
+
+  // clear the transfer‐pending flag in the global pool
+  endpoint_t *ep = PIO_USB_ENDPOINT(ep_addr & 0x7F);
+  ep->has_transfer = false;
+
+  return true;
+}
+#endif
 
 //--------------------------------------------------------------------+
 // HCD API
@@ -186,7 +202,7 @@ static void __no_inline_not_in_flash_func(handle_endpoint_irq)(root_port_t *rpor
 void __no_inline_not_in_flash_func(pio_usb_host_irq_handler)(uint8_t root_id) {
   uint8_t const tu_rhport = root_id + 1;
   root_port_t *rport = PIO_USB_ROOT_PORT(root_id);
-  uint32_t const ints = rport->ints;
+  uint32_t ints = rport->ints;
 
   if ( ints & PIO_USB_INTS_ENDPOINT_COMPLETE_BITS ) {
     handle_endpoint_irq(rport, XFER_RESULT_SUCCESS, &rport->ep_complete);
@@ -197,10 +213,25 @@ void __no_inline_not_in_flash_func(pio_usb_host_irq_handler)(uint8_t root_id) {
   }
 
   if ( ints & PIO_USB_INTS_ENDPOINT_ERROR_BITS ) {
+#if defined(PICO_RP2350) // trying to fix disconnection not being detected on pico2
+    if (rport->connected && ++rport->failed_count > 2) {
+      rport->connected = false;
+      rport->suspended = true;
+      rport->failed_count = 0;
+      //rport->ints = PIO_USB_INTS_DISCONNECT_BITS;
+      hcd_event_device_remove(tu_rhport, true);
+    } else {
+      handle_endpoint_irq(rport, XFER_RESULT_FAILED, &rport->ep_error);
+    }
+#else
     handle_endpoint_irq(rport, XFER_RESULT_FAILED, &rport->ep_error);
+#endif
   }
 
   if ( ints & PIO_USB_INTS_CONNECT_BITS ) {
+#if defined(PICO_RP2350) // trying to fix disconnection not being detected on pico2
+    rport->failed_count = 0;
+#endif
     hcd_event_device_attach(tu_rhport, true);
   }
 

@@ -89,6 +89,8 @@
 
 enum { STRID_LANGUAGE = 0, STRID_MANUFACTURER, STRID_PRODUCT, STRID_SERIAL };
 
+extern uint8_t _ep0_size;//custom CFG_TUD_ENDPOINT0_SIZE
+
 Adafruit_USBD_Device TinyUSBDevice;
 
 Adafruit_USBD_Device::Adafruit_USBD_Device(void) {
@@ -120,6 +122,26 @@ void Adafruit_USBD_Device::setVersion(uint16_t bcd) {
 
 void Adafruit_USBD_Device::setDeviceVersion(uint16_t bcd) {
   _desc_device.bcdDevice = bcd;
+}
+
+//custom
+void Adafruit_USBD_Device::setMaxPacketSize0(uint8_t bMaxPacketSize) {
+  _ep0_size = bMaxPacketSize;
+  _desc_device.bMaxPacketSize0 = bMaxPacketSize;
+}
+void Adafruit_USBD_Device::setDeviceClass(uint8_t device_class) {
+ _desc_device.bDeviceClass = device_class;
+}
+void Adafruit_USBD_Device::setDeviceSubClass(uint8_t device_subclass) {
+ _desc_device.bDeviceSubClass = device_subclass;
+}
+void Adafruit_USBD_Device::setDeviceProtocol(uint8_t device_protocol) {
+ _desc_device.bDeviceProtocol = device_protocol;
+}
+void Adafruit_USBD_Device::ClearStringIndexes(void) {
+ _desc_device.iManufacturer = 0;
+ _desc_device.iProduct = 0;
+ _desc_device.iSerialNumber = 0;
 }
 
 void Adafruit_USBD_Device::setLanguageDescriptor(uint16_t language_id) {
@@ -239,6 +261,7 @@ bool Adafruit_USBD_Device::begin(uint8_t rhport) {
   _desc_device.bDeviceClass = TUSB_CLASS_MISC;
   _desc_device.bDeviceSubClass = MISC_SUBCLASS_COMMON;
   _desc_device.bDeviceProtocol = MISC_PROTOCOL_IAD;
+  _desc_device.bMaxPacketSize0 = CFG_TUD_ENDPOINT0_SIZE; // custom
 
 #if defined(ARDUINO_ARCH_ESP32)
 #if ARDUINO_USB_CDC_ON_BOOT && !ARDUINO_USB_MODE
@@ -303,6 +326,10 @@ uint16_t const *Adafruit_USBD_Device::descriptor_string_cb(uint8_t index,
 
   uint8_t chr_count;
 
+  if (index == STRID_MANUFACTURER) { // custom
+      string_manufacturer_read_cb();
+  }
+
   switch (index) {
   case STRID_LANGUAGE:
     _desc_str[1] = ((uint16_t)((uint32_t)_desc_str_arr[STRID_LANGUAGE]));
@@ -349,16 +376,34 @@ uint8_t const *tud_descriptor_configuration_cb(uint8_t index) {
   return TinyUSBDevice._desc_cfg;
 }
 
+
+// Hardcoded MS OS 1.0 string descriptor (MSFT100 + vendor code + padding)
+// Format: bLength, bDescriptorType(0x03), UTF-16LE "MSFT100", bVendorCode, bPad
+// bLength = 18 (0x12)
+static const uint8_t ms_os_string_desc[] = {
+  0x12, 0x03,
+  'M', 0x00, 'S', 0x00, 'F', 0x00, 'T', 0x00, '1', 0x00, '0', 0x00, '0', 0x00,
+  0x20, // vendor code
+  0x00  // padding
+};
+//static inline uint16_t const* get_ms_os_string_ptr(void) { return (uint16_t const*)ms_os_string_desc; }
+TU_ATTR_WEAK uint16_t const* get_ms_os_10_string_ptr(void) { return NULL; }
+
 // Invoked when received GET STRING DESCRIPTOR request
 // Application return pointer to descriptor, whose contents must exist long
 // enough for transfer to complete Note: the 0xEE index string is a Microsoft
 // OS 1.0 Descriptors.
 // https://docs.microsoft.com/en-us/windows-hardware/drivers/usbcon/microsoft-defined-usb-descriptors
 uint16_t const *tud_descriptor_string_cb(uint8_t index, uint16_t langid) {
+   if (index == 0xEE)
+     return get_ms_os_10_string_ptr();
   return TinyUSBDevice.descriptor_string_cb(index, langid);
 }
 
 } // extern C
+
+
+TU_ATTR_WEAK void string_manufacturer_read_cb(void) { }
 
 //--------------------------------------------------------------------+
 // Helper

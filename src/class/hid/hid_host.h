@@ -178,6 +178,9 @@ bool hidh_set_config(uint8_t dev_addr, uint8_t itf_num);
 bool hidh_xfer_cb(uint8_t dev_addr, uint8_t ep_addr, xfer_result_t result, uint32_t xferred_bytes);
 void hidh_close(uint8_t dev_addr);
 
+// Custom: Don't read hid descriptor for some devices.
+TU_ATTR_WEAK bool tuh_hid_descriptor_blacklisted(uint8_t dev_addr);
+
 #ifdef __cplusplus
 }
 #endif

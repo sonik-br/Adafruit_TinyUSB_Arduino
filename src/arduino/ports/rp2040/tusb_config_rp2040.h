@@ -88,19 +88,19 @@ extern "C" {
 #define CFG_TUD_MSC 1
 #endif
 #ifndef CFG_TUD_HID
-#define CFG_TUD_HID 2
+#define CFG_TUD_HID 6//2
 #endif
 #ifndef CFG_TUD_MIDI
 #define CFG_TUD_MIDI 1
 #endif
 #ifndef CFG_TUD_VENDOR
-#define CFG_TUD_VENDOR 1
+#define CFG_TUD_VENDOR 4//1
 #endif
 #ifndef CFG_TUD_VIDEO
-#define CFG_TUD_VIDEO 1 // number of video control interfaces
+#define CFG_TUD_VIDEO 0//1 // number of video control interfaces
 #endif
 #ifndef CFG_TUD_VIDEO_STREAMING
-#define CFG_TUD_VIDEO_STREAMING 1 // number of video streaming interfaces
+#define CFG_TUD_VIDEO_STREAMING 0//1 // number of video streaming interfaces
 #endif
 
 // video streaming endpoint buffer size
@@ -129,7 +129,7 @@ extern "C" {
 //--------------------------------------------------------------------
 
 // Size of buffer to hold descriptors and other data used for enumeration
-#define CFG_TUH_ENUMERATION_BUFSIZE 256
+#define CFG_TUH_ENUMERATION_BUFSIZE 322 //1343(sidewinder2), 322 (x360receiver), 256 (default)
 
 // Number of hub devices
 #define CFG_TUH_HUB 1

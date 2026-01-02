@@ -52,6 +52,8 @@ Adafruit_USBD_HID::Adafruit_USBD_HID(uint8_t const *desc_report, uint16_t len,
 
   _get_report_cb = NULL;
   _set_report_cb = NULL;
+  
+  _ep_size = CFG_TUD_HID_EP_BUFSIZE;
 }
 
 void Adafruit_USBD_HID::setPollInterval(uint8_t interval_ms) {
@@ -80,6 +82,12 @@ void Adafruit_USBD_HID::setReportCallback(get_report_callback_t get_report,
   _set_report_cb = set_report;
 }
 
+//custom
+void Adafruit_USBD_HID::setEndpointSize(uint8_t ep_size) {
+  _ep_size = ep_size;
+  tud_hid_set_epsize(_instance, ep_size);
+}
+
 uint16_t Adafruit_USBD_HID::makeItfDesc(uint8_t itfnum, uint8_t *buf,
                                         uint16_t bufsize, uint8_t ep_in,
                                         uint8_t ep_out) {
@@ -89,10 +97,10 @@ uint16_t Adafruit_USBD_HID::makeItfDesc(uint8_t itfnum, uint8_t *buf,
 
   uint8_t const desc_inout[] = {TUD_HID_INOUT_DESCRIPTOR(
       itfnum, _strid, _protocol, _desc_report_len, ep_in, ep_out,
-      CFG_TUD_HID_EP_BUFSIZE, _interval_ms)};
+      _ep_size /*CFG_TUD_HID_EP_BUFSIZE*/, _interval_ms)};
   uint8_t const desc_in_only[] = {
       TUD_HID_DESCRIPTOR(itfnum, _strid, _protocol, _desc_report_len, ep_in,
-                         CFG_TUD_HID_EP_BUFSIZE, _interval_ms)};
+                         _ep_size /*CFG_TUD_HID_EP_BUFSIZE*/, _interval_ms)};
 
   uint8_t const *desc;
   uint16_t len;

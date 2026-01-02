@@ -72,6 +72,13 @@ public:
   // Set bcdDevice version
   void setDeviceVersion(uint16_t bcd);
 
+  // Custom
+  void setMaxPacketSize0(uint8_t bMaxPacketSize);
+  void setDeviceClass(uint8_t device_class);
+  void setDeviceSubClass(uint8_t device_subclass);
+  void setDeviceProtocol(uint8_t device_protocol);
+  void ClearStringIndexes(void);
+
   //------------- Configuration descriptor -------------//
 
   // Add a new interface
@@ -154,6 +161,8 @@ private:
   friend uint16_t const *tud_descriptor_string_cb(uint8_t index,
                                                   uint16_t langid);
 };
+
+TU_ATTR_WEAK void string_manufacturer_read_cb(void);
 
 extern Adafruit_USBD_Device TinyUSBDevice;
 

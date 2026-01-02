@@ -142,6 +142,7 @@ typedef struct {
 
 tu_static usbd_device_t _usbd_dev;
 static volatile uint8_t _usbd_queued_setup;
+extern uint8_t _ep0_size;//custom CFG_TUD_ENDPOINT0_SIZE
 
 //--------------------------------------------------------------------+
 // Class Driver
@@ -1146,14 +1147,14 @@ static bool process_get_descriptor(uint8_t rhport, tusb_control_request_t const 
 
       // Only response with exactly 1 Packet if: not addressed and host requested more data than device descriptor has.
       // This only happens with the very first get device descriptor and EP0 size = 8 or 16.
-      if ((CFG_TUD_ENDPOINT0_SIZE < sizeof(tusb_desc_device_t)) && !_usbd_dev.addressed &&
+      if ((_ep0_size/*CFG_TUD_ENDPOINT0_SIZE*/ < sizeof(tusb_desc_device_t)) && !_usbd_dev.addressed &&
           ((tusb_control_request_t const*) p_request)->wLength > sizeof(tusb_desc_device_t)) {
         // Hack here: we modify the request length to prevent usbd_control response with zlp
         // since we are responding with 1 packet & less data than wLength.
         tusb_control_request_t mod_request = *p_request;
-        mod_request.wLength = CFG_TUD_ENDPOINT0_SIZE;
+        mod_request.wLength = _ep0_size/*CFG_TUD_ENDPOINT0_SIZE*/;
 
-        return tud_control_xfer(rhport, &mod_request, desc_device, CFG_TUD_ENDPOINT0_SIZE);
+        return tud_control_xfer(rhport, &mod_request, desc_device, _ep0_size/*CFG_TUD_ENDPOINT0_SIZE*/);
       }else {
         return tud_control_xfer(rhport, p_request, desc_device, sizeof(tusb_desc_device_t));
       }
@@ -1499,8 +1500,13 @@ void usbd_edpt_stall(uint8_t rhport, uint8_t ep_addr) {
   _usbd_dev.ep_status[epnum][dir].busy = 1;
 }
 
+TU_ATTR_WEAK void usbd_edpt_clear_stall_cb(uint8_t ep_addr) { }
+
 void usbd_edpt_clear_stall(uint8_t rhport, uint8_t ep_addr) {
   rhport = _usbd_rhport;
+
+  // custom
+  usbd_edpt_clear_stall_cb(ep_addr);
 
   uint8_t const epnum = tu_edpt_number(ep_addr);
   uint8_t const dir = tu_edpt_dir(ep_addr);

@@ -55,6 +55,9 @@ public:
   void setReportCallback(get_report_callback_t get_report,
                          set_report_callback_t set_report);
 
+  //custom 
+  void setEndpointSize(uint8_t ep_size);
+
   bool begin(void);
   bool isValid(void) { return _instance != INVALID_INSTANCE; }
 
@@ -97,6 +100,7 @@ private:
   uint8_t _protocol;
   bool _out_endpoint;
   uint8_t _mouse_button;
+  uint8_t _ep_size; // custom
 
   uint16_t _desc_report_len;
   uint8_t const *_desc_report;

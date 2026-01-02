@@ -136,6 +136,10 @@ uint8_t const * tud_descriptor_configuration_cb(uint8_t index);
 // Application return pointer to descriptor, whose contents must exist long enough for transfer to complete
 uint16_t const* tud_descriptor_string_cb(uint8_t index, uint16_t langid);
 
+// custom
+TU_ATTR_WEAK uint16_t const* get_ms_os_10_string_ptr(void);
+TU_ATTR_WEAK void usbd_edpt_clear_stall_cb(uint8_t ep_addr);
+
 // Invoked when received GET BOS DESCRIPTOR request
 // Application return pointer to descriptor
 TU_ATTR_WEAK uint8_t const * tud_descriptor_bos_cb(void);

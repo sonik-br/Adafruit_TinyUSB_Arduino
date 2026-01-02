@@ -47,6 +47,11 @@
   #define CFG_TUD_HID_EP_BUFSIZE     64
 #endif
 
+
+
+//custom
+bool tud_hid_set_epsize(uint8_t instance, uint8_t ep_size);
+
 //--------------------------------------------------------------------+
 // Application API (Multiple Instances) i.e. CFG_TUD_HID > 1
 //--------------------------------------------------------------------+
@@ -124,6 +129,9 @@ TU_ATTR_ALWAYS_INLINE static inline bool tud_hid_stylus_report(uint8_t report_id
 //--------------------------------------------------------------------+
 // Application Callbacks
 //--------------------------------------------------------------------+
+
+//custom
+TU_ATTR_WEAK void hid_descriptor_report_read_cb(void);
 
 // Invoked when received GET HID REPORT DESCRIPTOR request
 // Application return pointer to descriptor, whose contents must exist long enough for transfer to complete
